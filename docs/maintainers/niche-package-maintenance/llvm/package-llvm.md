@@ -1,5 +1,4 @@
-(packaging-llvm)=
-# LLVM packaging guide
+# How to package LLVM
 
 
 ## Getting set up
