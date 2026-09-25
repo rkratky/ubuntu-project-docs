@@ -1,0 +1,44 @@
+# Test-only helper (rc-test branch, never merge): opens a PR authored by
+# github-actions[bot] so the fork owner can review it (you cannot approve
+# your own PR). PRs created with GITHUB_TOKEN do not trigger workflows, so
+# run coverage for the new PR via review-coverage.yml workflow_dispatch.
+name: rc-test bot PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'File to create or append to (e.g. docs/rc-test/a.md)'
+        required: true
+
+permissions: {}
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Create branch, commit, open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ inputs.file }}
+        run: |
+          set -euo pipefail
+          BASE=rc-test
+          B="rc-test/bot-${GITHUB_RUN_ID}"
+          SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$BASE" --jq .object.sha)
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$B" -f sha="$SHA" >/dev/null
+          FSHA=""
+          BODY=""
+          if OLD=$(gh api "repos/$GITHUB_REPOSITORY/contents/$FILE?ref=$B" 2>/dev/null); then
+            FSHA=$(jq -r .sha <<<"$OLD")
+            BODY=$(jq -r .content <<<"$OLD" | base64 -d)
+          fi
+          NEW=$(printf '%s\n# rc-test bot edit %s\n' "$BODY" "$GITHUB_RUN_ID" | base64 -w0)
+          args=(-X PUT "repos/$GITHUB_REPOSITORY/contents/$FILE" -f message="test: bot edit $FILE" -f content="$NEW" -f branch="$B")
+          if [ -n "$FSHA" ]; then args+=(-f sha="$FSHA"); fi
+          gh api "${args[@]}" >/dev/null
+          gh pr create -R "$GITHUB_REPOSITORY" --base "$BASE" --head "$B" \
+            --title "rc-test: bot edit $FILE" --body "Automated rc-test PR."
