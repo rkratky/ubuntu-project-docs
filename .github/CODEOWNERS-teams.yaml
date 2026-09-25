@@ -5,3 +5,4 @@
 "docs/tools/": "tools"
 "/.github/": ".github"
 "/.github/CODEOWNERS": "CODEOWNERS file"
+"docs/rc-test/": "rc-test"
