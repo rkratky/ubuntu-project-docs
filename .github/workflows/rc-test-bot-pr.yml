@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE=rc-test
-          B="rc-test/bot-${GITHUB_RUN_ID}"
+          B="rctest-bot-${GITHUB_RUN_ID}"
           SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$BASE" --jq .object.sha)
           gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$B" -f sha="$SHA" >/dev/null
           FSHA=""
